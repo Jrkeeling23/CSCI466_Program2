@@ -17,22 +17,36 @@ class Packet:
 
     @classmethod
     def from_byte_S(self, byte_S):
+        print("----------------------in from_byte_s")
         if Packet.corrupt(byte_S):
             raise RuntimeError('Cannot initialize Packet: byte_S is corrupt')
         # extract the fields
         seq_num = int(byte_S[Packet.length_S_length: Packet.length_S_length + Packet.seq_num_S_length])
+        print("seq_num : ", seq_num)
         msg_S = byte_S[Packet.length_S_length + Packet.seq_num_S_length + Packet.checksum_length:]
+        print("msg_s : ", msg_S)
         return self(seq_num, msg_S)
 
     def get_byte_S(self):
+        print("----------------------in get_byte_s")
         # convert sequence number of a byte field of seq_num_S_length bytes
         seq_num_S = str(self.seq_num).zfill(self.seq_num_S_length)
+        print("Seq_num_s = " + seq_num_S)
         # convert length to a byte field of length_S_length bytes
         length_S = str(self.length_S_length + len(seq_num_S) + self.checksum_length + len(self.msg_S)).zfill(
             self.length_S_length)
+        print("str len(seq_num_S) = " + str(len(seq_num_S)))
+        print("str checksum_length = " + str(self.checksum_length))
+        print("str msg_s = " + str(len(self.msg_S)))
+        print("length_s = " + length_S)
         # compute the checksum
         checksum = hashlib.md5((length_S + seq_num_S + self.msg_S).encode('utf-8'))
+        print((length_S + seq_num_S + self.msg_S).encode('utf-8'))
+        print(length_S + seq_num_S + self.msg_S)
+        print(checksum)
         checksum_S = checksum.hexdigest()
+        print(checksum_S)
+        print(length_S + seq_num_S + checksum_S + self.msg_S)
         # compile into a string
         return length_S + seq_num_S + checksum_S + self.msg_S
 
@@ -65,14 +79,19 @@ class RDT:
         self.network.disconnect()
 
     def rdt_1_0_send(self, msg_S):
+        print("in rdt_1_0_send------------------------------------------- ")
         p = Packet(self.seq_num, msg_S)
         self.seq_num += 1
+        print(self.seq_num)
         self.network.udt_send(p.get_byte_S())
 
     def rdt_1_0_receive(self):
         ret_S = None
         byte_S = self.network.udt_receive()
         self.byte_buffer += byte_S
+        # print("in receive-----------------------------------------")
+        # print("byte_s : ", byte_S)
+        # print("length ", length)
         # keep extracting packets - if reordered, could get more than one
         while True:
             # check if we have received enough bytes
